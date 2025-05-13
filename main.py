@@ -46,6 +46,7 @@ def serve_file(client, path):
         with open(full_path[1:], 'rb') as f:
             client.send('HTTP/1.1 200 OK\r\n')
             client.send('Content-Type: {}\r\n'.format(get_mime_type(path)))
+            client.send('Access-Control-Allow-Origin: *\r\n')
             client.send('Connection: close\r\n')
             client.send('\r\n')
             
@@ -59,6 +60,7 @@ def serve_file(client, path):
         print('Error serving file:', e)
         client.send('HTTP/1.1 404 Not Found\r\n')
         client.send('Content-Type: text/html\r\n')
+        client.send('Access-Control-Allow-Origin: *\r\n')
         client.send('\r\n')
         client.send('<h1>404 Not Found</h1>')
 
