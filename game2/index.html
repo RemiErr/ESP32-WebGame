@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>乒乓遊戲</title>
+
+  <!-- 核心：Tocas UI -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocas-ui/5.0.2/tocas.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tocas-ui/5.0.2/tocas.min.js"></script>
+
+  <!-- 字體：Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- 啟用：響應式設計 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <style>
+    * {
+      /* border: 1px solid #980202; */
+    }
+
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ts-container is-narrow" style="padding-top: 2rem;">
+    <div class="ts-grid is-center-aligned is-middle-aligned is-1-columns">
+      <div class="column is-10-wide">
+        <!-- Room & Player Information -->
+        <div class="ts-wrap has-start-spaced-big">
+          <div class="ts-chip is-circular">
+            <div class="ts-image is-circular">
+              <span class="ts-icon is-user-icon"></span>
+            </div>
+            Player 1
+          </div>
+          <div class="ts-chip is-circular">
+            <div class="ts-image is-circular">
+              <span class="ts-icon is-user-icon"></span>
+            </div>
+            Player 2
+          </div>
+        </div>
+      </div>
+      <div class="column is-6-wide is-center-aligned">
+        <!-- Game Dropdown Menu -->
+        <div class="ts-wrap">
+          <div class="ts-button is-circular" style="padding-right: 0.6rem; padding-left: 0.1rem;"
+            data-dropdown="dropdown-module">
+            <div class="ts-wrap is-compact is-center-aligned is-middle-aligned">
+              <span class="ts-button is-circular is-small is-secondary">下拉選單</span>
+              <span class="ts-icon is-gamepad-icon"></span>
+            </div>
+          </div>
+          <div class="ts-dropdown is-separated" id="dropdown-module">
+            <button class="item">乒乓</button>
+            <button class="item">貪吃蛇</button>
+          </div>
+        </div>
+      </div>
+      <div class="column is-fluid" style="padding-top: 1rem;">
+        <!-- Game Canvas -->
+        <div class="ts-box is-raised is-circular"
+          style="height: 35rem; background-color: var(--ts-static-gray-300); color: var(--ts-static-gray-900);">
+          <div class="ts-content is-center-aligned is-middle-aligned" id="game-container"
+            style="padding: 0; margin: 0; height: 100%;">
+            <canvas id="game"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="pingpong.js"></script>
+</body>
+
+</html>

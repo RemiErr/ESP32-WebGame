@@ -2,6 +2,9 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
 const box = 20;
+const canvasWidth = 820;
+const canvasHeight = 520;
+
 let snake = [{ x: 200, y: 200 }];
 let direction = 'RIGHT';
 let food = {
@@ -17,7 +20,7 @@ document.addEventListener('keydown', e => {
 });
 
 function draw() {
-  ctx.clearRect(0, 0, 400, 400);
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
   for (let i = 0; i < snake.length; i++) {
     ctx.fillStyle = i === 0 ? 'green' : 'lightgreen';
@@ -46,7 +49,7 @@ function draw() {
 
   const newHead = { x: headX, y: headY };
 
-  if (headX < 0 || headX >= 400 || headY < 0 || headY >= 400 || collision(newHead, snake)) {
+  if (headX < 0 || headX > canvasWidth || headY < 0 || headY > canvasHeight || collision(newHead, snake)) {
     clearInterval(game);
     alert('遊戲結束！');
   }
