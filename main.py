@@ -1,3 +1,4 @@
+import machine
 import network
 import socket
 import os
@@ -17,6 +18,7 @@ while not wifi.isconnected():
 
 print('WiFi連線成功, IP:', wifi.ifconfig()[0])
 
+
 # MIME類型設定
 def get_mime_type(filename):
     if filename.endswith('.html'):
@@ -35,21 +37,22 @@ def get_mime_type(filename):
         return 'audio/ogg'
     return 'text/plain'
 
+
 # 處理HTTP請求
 def serve_file(client, path):
     try:
         if path == '/':
             path = '/index.html'
-        
+
         full_path = '/game' + path
-        
+
         with open(full_path[1:], 'rb') as f:
             client.send('HTTP/1.1 200 OK\r\n')
             client.send('Content-Type: {}\r\n'.format(get_mime_type(path)))
             client.send('Access-Control-Allow-Origin: *\r\n')
             client.send('Connection: close\r\n')
             client.send('\r\n')
-            
+
             # 分段讀取與傳送
             while True:
                 data = f.read(4096)  # 每次讀1024 bytes
@@ -63,6 +66,42 @@ def serve_file(client, path):
         client.send('Access-Control-Allow-Origin: *\r\n')
         client.send('\r\n')
         client.send('<h1>404 Not Found</h1>')
+
+
+# 外部按鈕事件
+def btn_handler_w(pin):
+    try:
+        # 模擬按下鍵盤W鍵的請求
+        client = socket.socket()
+        client.connect(('0.0.0.0', 80))  # 連接到本地Web伺服器
+        client.send(
+            'GET /key-pressed/W HTTP/1.1\r\nHost: 0.0.0.0\r\n\r\n')
+        client.close()
+        print('Key W press request sent')
+    except Exception as e:
+        print('Error sending button request:', e)
+
+
+def btn_handler_s(pin):
+    try:
+        # 模擬按下鍵盤W鍵的請求
+        client = socket.socket()
+        client.connect(('0.0.0.0', 80))  # 連接到本地Web伺服器
+        client.send(
+            'GET /key-pressed/S HTTP/1.1\r\nHost: 0.0.0.0\r\n\r\n')
+        client.close()
+        print('Key W press request sent')
+    except Exception as e:
+        print('Error sending button request:', e)
+
+
+# 設定按鈕GPIO
+btn_p1_up_pin = machine.Pin(0, machine.Pin.IN, machine.Pin.PULL_UP)
+btn_p1_down_pin = machine.Pin(0, machine.Pin.IN, machine.Pin.PULL_UP)
+
+# 設定按鈕中斷
+btn_p1_up_pin.irq(trigger=machine.Pin.IRQ_FALLING, handler=btn_handler_w)
+btn_p1_down_pin.irq(trigger=machine.Pin.IRQ_FALLING, handler=btn_handler_s)
 
 
 # 啟動Server
