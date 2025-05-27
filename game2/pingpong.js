@@ -1,24 +1,17 @@
 // select canvas element
 const canvas = document.getElementById("game");
 const container = document.getElementById("game-container");
-
-// getContext of canvas = methods and properties to draw and do a lot of thing to the canvas
 const ctx = canvas.getContext('2d');
-
-// socket
 const socket = new WebSocket(`ws://${location.host}/ws`);
 
-socket.onmessage = e = (event) => {
-  
-}
-
-// load sounds
 let hit = new Audio("sounds/hit.mp3");
 let wall = new Audio("sounds/wall.mp3");
-let userScore = new Audio("sounds/comScore.mp3");
-let comScore = new Audio("sounds/userScore.mp3");
+let localUserScore = new Audio("sounds/localUserScore.mp3");
+let remoteUserScore = new Audio("sounds/remoteUserScore.mp3");
+let gameCountdown = true;
+let gameOver = false;
+let lastHitter = null;
 
-// Ball object
 const ball = {
   x: canvas.width / 2,
   y: canvas.height / 2,
@@ -26,73 +19,91 @@ const ball = {
   velocityX: 5,
   velocityY: 5,
   speed: 7,
-  color: "WHITE"
-}
+  color: "rgb(225, 225, 225)"
+};
 
-// User Paddle
-const user = {
+const buffItem = {
+  x: -100,
+  y: -100,
+  radius: 30,
+  active: false,
+  effect: null,
+  color: "rgb(172, 134, 191)",
+  spawnTime: null,
+  duration: 20000
+};
+
+const effects = {
+  speedUp: {
+    name: "Speed Up",
+    duration: 10000,
+    apply(paddle) {
+      paddle.height = 150;
+      paddle.buffSpeed = 5;
+    },
+    remove(paddle) {
+      paddle.height = 100;
+      paddle.buffSpeed = 0;
+    }
+  }
+};
+
+const localUser = {
   x: 0,
   y: (canvas.height - 100) / 2,
   width: 10,
   height: 100,
   score: 0,
-  color: "WHITE"
-}
+  speed: 5,
+  buffSpeed: 0,
+  buffTimer: null,
+  color: "rgb(49, 125, 150)"
+};
 
-// COM Paddle
-const com = {
+const remoteUser = {
   x: canvas.width - 10,
   y: (canvas.height - 100) / 2,
   width: 10,
   height: 100,
   score: 0,
+  speed: 5,
+  buffSpeed: 0,
+  buffTimer: null,
   color: "rgb(150, 30, 30)"
-}
+};
 
-// NET
 const net = {
   x: (canvas.width - 2) / 2,
   y: 0,
   height: 10,
   width: 2,
-  color: "WHITE"
-}
+  color: "rgba(225, 225, 225, 0.5)"
+};
 
-// 適應畫布大小
 function resizeCanvas() {
   canvas.width = container.offsetWidth;
   canvas.height = container.offsetHeight;
   updateObjects();
 }
 
-// 更新物件
 function updateObjects() {
-  // Update ball position
   ball.x = canvas.width / 2;
   ball.y = canvas.height / 2;
-
-  // Update user paddle position
-  user.x = 0;
-  user.y = (canvas.height - user.height) / 2;
-
-  // Update COM paddle position
-  com.x = canvas.width - com.width;
-  com.y = (canvas.height - com.height) / 2;
-
-  // Update net position
+  localUser.x = 0;
+  localUser.y = (canvas.height - localUser.height) / 2;
+  remoteUser.x = canvas.width - remoteUser.width;
+  remoteUser.y = (canvas.height - remoteUser.height) / 2;
   net.x = (canvas.width - net.width) / 2;
 }
 
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// draw a rectangle, will be used to draw paddles
 function drawRect(x, y, w, h, color) {
   ctx.fillStyle = color;
   ctx.fillRect(x, y, w, h);
 }
 
-// draw circle, will be used to draw the ball
 function drawArc(x, y, r, color) {
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -101,28 +112,33 @@ function drawArc(x, y, r, color) {
   ctx.fill();
 }
 
-// listening to the keyboard
-const keyState = {}
-
-document.addEventListener('keydown', (e) => {
-  keyState[e.code] = true
-})
-
-document.addEventListener('keyup', (e) => {
-  keyState[e.code] = false
-})
-
-function move() {
-  const paddleSpeed = 5;
-  if (keyState['ArrowUp']) user.y = user.y = Math.max(user.y - paddleSpeed, 0);
-  if (keyState['ArrowDown']) user.y = Math.min(user.y + paddleSpeed, canvas.height - user.height);
-
-  requestAnimationFrame(move)
+function drawText(text, x, y, color, fontSize = "75px") {
+  ctx.fillStyle = color;
+  ctx.font = `${fontSize} fantasy`;
+  ctx.fillText(text, x, y);
 }
 
-move()
+const keyState = {};
+document.addEventListener('keydown', e => keyState[e.code] = true);
+document.addEventListener('keyup', e => keyState[e.code] = false);
 
-// when COM or USER scores, we reset the ball
+function moveLocalUser() {
+  const paddleSpeed = localUser.speed + (localUser.buffSpeed || 0);
+  if (keyState['KeyW']) localUser.y = Math.max(localUser.y - paddleSpeed, 0);
+  if (keyState['KeyS']) localUser.y = Math.min(localUser.y + paddleSpeed, canvas.height - localUser.height);
+  requestAnimationFrame(moveLocalUser);
+}
+
+function moveRemoteUser() {
+  const paddleSpeed = remoteUser.speed + (remoteUser.buffSpeed || 0);
+  if (keyState['ArrowUp']) remoteUser.y = Math.max(remoteUser.y - paddleSpeed, 0);
+  if (keyState['ArrowDown']) remoteUser.y = Math.min(remoteUser.y + paddleSpeed, canvas.height - remoteUser.height);
+  requestAnimationFrame(moveRemoteUser);
+}
+
+moveLocalUser();
+moveRemoteUser();
+
 function resetBall() {
   ball.x = canvas.width / 2;
   ball.y = canvas.height / 2;
@@ -130,123 +146,136 @@ function resetBall() {
   ball.speed = 7;
 }
 
-// draw the net
 function drawNet() {
   for (let i = 0; i <= canvas.height; i += 15) {
     drawRect(net.x, net.y + i, net.width, net.height, net.color);
   }
 }
 
-// draw text
-function drawText(text, x, y, color) {
-  ctx.fillStyle = color;
-  ctx.font = "75px fantasy";
-  ctx.fillText(text, x, y);
-}
-
-// collision detection
 function collision(b, p) {
   p.top = p.y;
   p.bottom = p.y + p.height;
   p.left = p.x;
   p.right = p.x + p.width;
-
   b.top = b.y - b.radius;
   b.bottom = b.y + b.radius;
   b.left = b.x - b.radius;
   b.right = b.x + b.radius;
-
   return p.left < b.right && p.top < b.bottom && p.right > b.left && p.bottom > b.top;
 }
 
-// update function, the function that does all calculations
-function update() {
+function spawnBuffInOpponentArea(opponent) {
+  buffItem.active = true;
+  buffItem.effect = effects.speedUp;
+  buffItem.spawnTime = Date.now();
+  const areaWidth = canvas.width / 2;
+  buffItem.x = (opponent === localUser)
+    ? Math.random() * (areaWidth - buffItem.radius * 2 - remoteUser.width) + areaWidth + remoteUser.width
+    : Math.random() * (areaWidth - buffItem.radius * 2 - localUser.width) + localUser.width;
+  buffItem.y = Math.random() * (canvas.height - buffItem.radius * 2) + buffItem.radius;
+}
 
-  // change the score of players, if the ball goes to the left "ball.x<0" computer win, else if "ball.x > canvas.width" the user win
+function checkBuffCollision() {
+  if (!buffItem.active || !lastHitter) return;
+  const dx = ball.x - buffItem.x;
+  const dy = ball.y - buffItem.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance < ball.radius + buffItem.radius) {
+    buffItem.active = false;
+    buffItem.x = -100;
+    buffItem.y = -100;
+    const effect = buffItem.effect;
+    const target = lastHitter;
+    if (effect) {
+      effect.apply(target);
+      clearTimeout(target.buffTimer);
+      target.buffTimer = setTimeout(() => {
+        effect.remove(target);
+      }, effect.duration);
+    }
+  }
+}
+
+function update() {
   if (ball.x - ball.radius < 0) {
-    com.score++;
-    comScore.play();
+    remoteUser.score++;
+    remoteUserScore.play();
+    if (remoteUser.score % 5 === 0 && !buffItem.active) spawnBuffInOpponentArea(localUser);
     resetBall();
   } else if (ball.x + ball.radius > canvas.width) {
-    user.score++;
-    userScore.play();
-    resetBall();  
+    localUser.score++;
+    localUserScore.play();
+    if (localUser.score % 5 === 0 && !buffItem.active) spawnBuffInOpponentArea(remoteUser);
+    resetBall();
   }
 
-  // the ball has a velocity
   ball.x += ball.velocityX;
   ball.y += ball.velocityY;
-
-  // computer plays for itself, and we must be able to beat it
-  // simple AI
-  com.y += ((ball.y - (com.y + com.height / 2))) * 0.1;
-
-  // when the ball collides with bottom and top walls we inverse the y velocity.
   if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
     ball.velocityY = -ball.velocityY;
     wall.play();
   }
 
-  // we check if the paddle hit the user or the com paddle
-  let player = (ball.x + ball.radius < canvas.width / 2) ? user : com;
-
-  // if the ball hits a paddle
+  let player = (ball.x + ball.radius < canvas.width / 2) ? localUser : remoteUser;
   if (collision(ball, player)) {
-    // play sound
     hit.play();
-    // we check where the ball hits the paddle
-    let collidePoint = (ball.y - (player.y + player.height / 2));
-    // normalize the value of collidePoint, we need to get numbers between -1 and 1.
-    // -player.height/2 < collide Point < player.height/2
-    collidePoint = collidePoint / (player.height / 2);
-
-    // when the ball hits the top of a paddle we want the ball, to take a -45degees angle
-    // when the ball hits the center of the paddle we want the ball to take a 0degrees angle
-    // when the ball hits the bottom of the paddle we want the ball to take a 45degrees
-    // Math.PI/4 = 45degrees
+    lastHitter = player;
+    let collidePoint = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
     let angleRad = (Math.PI / 4) * collidePoint;
-
-    // change the X and Y velocity direction
     let direction = (ball.x + ball.radius < canvas.width / 2) ? 1 : -1;
     ball.velocityX = direction * ball.speed * Math.cos(angleRad);
     ball.velocityY = ball.speed * Math.sin(angleRad);
-
-    // speed up the ball everytime a paddle hits it.
     ball.speed += 0.1;
+  }
+
+  if (buffItem.active && Date.now() - buffItem.spawnTime > buffItem.duration) {
+    buffItem.active = false;
+    buffItem.x = -100;
+    buffItem.y = -100;
+  }
+
+  checkBuffCollision();
+}
+
+function render() {
+  drawRect(0, 0, canvas.width, canvas.height, "#000");
+  drawText(localUser.score, Math.round(canvas.width / 4) - 25, Math.round(canvas.height / 5), localUser.color);
+  drawText(remoteUser.score, 3 * Math.round(canvas.width / 4) - 25, Math.round(canvas.height / 5), remoteUser.color);
+  drawNet();
+  drawRect(localUser.x, localUser.y, localUser.width, localUser.height, localUser.color);
+  drawRect(remoteUser.x, remoteUser.y, remoteUser.width, remoteUser.height, remoteUser.color);
+  drawArc(ball.x, ball.y, ball.radius, ball.color);
+  if (buffItem.active) {
+    drawArc(buffItem.x, buffItem.y, buffItem.radius, buffItem.color);
+    const timeLeft = Math.ceil((buffItem.duration - (Date.now() - buffItem.spawnTime)) / 1000);
+    drawText(`${timeLeft}`, buffItem.x - 8, buffItem.y + 8, "rgb(50, 50, 50)", "20px");
   }
 }
 
-// render function, the function that does al the drawing
-function render() {
-
-  // clear the canvas
-  drawRect(0, 0, canvas.width, canvas.height, "#000");
-
-  // draw the user score to the left
-  drawText(user.score, Math.round(canvas.width / 4) - 25, Math.round(canvas.height / 5), user.color);
-
-  // draw the COM score to the right
-  drawText(com.score, 3 * Math.round(canvas.width / 4) - 25, Math.round(canvas.height / 5), com.color);
-
-  // draw the net
-  drawNet();
-
-  // draw the user's paddle
-  drawRect(user.x, user.y, user.width, user.height, user.color);
-
-  // draw the COM's paddle
-  drawRect(com.x, com.y, com.width, com.height, com.color);
-
-  // draw the ball
-  drawArc(ball.x, ball.y, ball.radius, ball.color);
-}
 function game() {
-  update();
-  render();
+  if (gameCountdown) {
+    let countdown = 3;
+    gameCountdown = false;
+    let countdownInterval = setInterval(() => {
+      drawRect(0, 0, canvas.width, canvas.height, "#000");
+      drawText(countdown, canvas.width / 2 - 25, canvas.height / 2, "WHITE");
+      countdown--;
+      if (countdown < 0) {
+        clearInterval(countdownInterval);
+        gameLoop();
+      }
+    }, 1000);
+  }
 }
-// number of frames per second
-let framePerSecond = 50;
 
-//call the game function 50 times every 1 Sec
-let loop = setInterval(game, 1000 / framePerSecond);
+function gameLoop() {
+  if (!gameOver) {
+    update();
+    render();
+    setTimeout(gameLoop, 1000 / 50);
+  } else {
+    gameCountdown = true;
+  }
+}
 
+game();
