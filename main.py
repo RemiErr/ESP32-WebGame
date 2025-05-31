@@ -1,9 +1,11 @@
 import machine
+from machine import Pin
 import network
 import socket
 import os
 
 from env import *
+from config import *
 
 # WiFi 連線
 ssid = SSID_NAME
@@ -69,39 +71,46 @@ def serve_file(client, path):
 
 
 # 外部按鈕事件
-def btn_handler_w(pin):
+def send_key_request(pin):
     try:
-        # 模擬按下鍵盤W鍵的請求
+        key = keyButtons[0][pin]
         client = socket.socket()
         client.connect(('0.0.0.0', 80))  # 連接到本地Web伺服器
         client.send(
-            'GET /key-pressed/W HTTP/1.1\r\nHost: 0.0.0.0\r\n\r\n')
+            'PUSH /key-pressed/{} HTTP/1.1\r\nHost: 0.0.0.0\r\n\r\n'.format(key.upper()))
         client.close()
-        print('Key W press request sent')
+        print('Key {} press request sent'.format(key.upper()))
     except Exception as e:
-        print('Error sending button request:', e)
-
-
-def btn_handler_s(pin):
-    try:
-        # 模擬按下鍵盤W鍵的請求
-        client = socket.socket()
-        client.connect(('0.0.0.0', 80))  # 連接到本地Web伺服器
-        client.send(
-            'GET /key-pressed/S HTTP/1.1\r\nHost: 0.0.0.0\r\n\r\n')
-        client.close()
-        print('Key W press request sent')
-    except Exception as e:
-        print('Error sending button request:', e)
+        print('Error sending key request:', e)
 
 
 # 設定按鈕GPIO
-btn_p1_up_pin = machine.Pin(0, machine.Pin.IN, machine.Pin.PULL_UP)
-btn_p1_down_pin = machine.Pin(0, machine.Pin.IN, machine.Pin.PULL_UP)
+pinPlayer1 = pinButtons[0]
+btn_p1_up_pin = Pin(pinPlayer1['w'], Pin.IN, Pin.PULL_UP)
+btn_p1_down_pin = Pin(pinPlayer1['s'], Pin.IN, Pin.PULL_UP)
+btn_p1_left_pin = Pin(pinPlayer1['a'], Pin.IN, Pin.PULL_UP)
+btn_p1_right_pin = Pin(pinPlayer1['d'], Pin.IN, Pin.PULL_UP)
+btn_p1_space_pin = Pin(pinPlayer1['space'], Pin.IN, Pin.PULL_UP)
+
+pinPlayer2 = pinButtons[1]
+btn_p2_up_pin = Pin(pinPlayer1['up'], Pin.IN, Pin.PULL_UP)
+btn_p2_down_pin = Pin(pinPlayer1['down'], Pin.IN, Pin.PULL_UP)
+btn_p2_left_pin = Pin(pinPlayer1['left'], Pin.IN, Pin.PULL_UP)
+btn_p2_right_pin = Pin(pinPlayer1['right'], Pin.IN, Pin.PULL_UP)
+btn_p2_ctrl_pin = Pin(pinPlayer1['ctrl'], Pin.IN, Pin.PULL_UP)
 
 # 設定按鈕中斷
-btn_p1_up_pin.irq(trigger=machine.Pin.IRQ_FALLING, handler=btn_handler_w)
-btn_p1_down_pin.irq(trigger=machine.Pin.IRQ_FALLING, handler=btn_handler_s)
+btn_p1_up_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+btn_p1_down_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+btn_p1_left_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+btn_p1_right_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+btn_p1_space_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+
+btn_p2_up_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+btn_p2_down_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+btn_p2_left_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+btn_p2_right_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
+btn_p2_ctrl_pin.irq(trigger=Pin.IRQ_FALLING, handler=send_key_request)
 
 
 # 啟動Server
