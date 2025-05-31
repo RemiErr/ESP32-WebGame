@@ -3,10 +3,6 @@ const canvas = document.getElementById("game");
 const container = document.getElementById("game-container");
 const ctx = canvas.getContext('2d');
 
-let hit = new Audio("sounds/hit.mp3");
-let wall = new Audio("sounds/wall.mp3");
-let localUserScore = new Audio("sounds/localUserScore.mp3");
-let remoteUserScore = new Audio("sounds/remoteUserScore.mp3");
 let gameCountdown = true;
 let gameOver = false;
 let lastHitter = null;
@@ -198,12 +194,10 @@ function checkBuffCollision() {
 function update() {
   if (ball.x - ball.radius < 0) {
     remoteUser.score++;
-    remoteUserScore.play();
     if (remoteUser.score % 5 === 0 && !buffItem.active) spawnBuffInOpponentArea(localUser);
     resetBall();
   } else if (ball.x + ball.radius > canvas.width) {
     localUser.score++;
-    localUserScore.play();
     if (localUser.score % 5 === 0 && !buffItem.active) spawnBuffInOpponentArea(remoteUser);
     resetBall();
   }
@@ -212,12 +206,10 @@ function update() {
   ball.y += ball.velocityY;
   if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
     ball.velocityY = -ball.velocityY;
-    wall.play();
   }
 
   let player = (ball.x + ball.radius < canvas.width / 2) ? localUser : remoteUser;
   if (collision(ball, player)) {
-    hit.play();
     lastHitter = player;
     let collidePoint = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
     let angleRad = (Math.PI / 4) * collidePoint;
