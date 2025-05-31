@@ -32,4 +32,10 @@ mpremote connect %PORT% fs cp env.py :
 echo [game/]
 mpremote connect %PORT% fs cp -r game/ :
 
+echo [game2/]
+mpremote connect %PORT% fs cp -r game2/ :
+
+echo [game3/]
+mpremote connect %PORT% fs cp -r game3/ :
+
 pause
