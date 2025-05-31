@@ -2,7 +2,7 @@
 const canvas = document.getElementById("game");
 const container = document.getElementById("game-container");
 const ctx = canvas.getContext('2d');
-const socket = new WebSocket(`ws://${location.host}/ws`);
+// const socket = new WebSocket(`ws://${location.host}/ws`);
 
 let hit = new Audio("sounds/hit.mp3");
 let wall = new Audio("sounds/wall.mp3");
