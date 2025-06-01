@@ -7,11 +7,11 @@ pinButtons = [
         "space": 26,
     },
     {
-        "up": 13,
-        "left": 12,
-        "down": 14,
-        "right": 27,
-        "ctrl": 26,
+        "up": 25,
+        "left": 33,
+        "down": 32,
+        "right": 35,
+        "ctrl": 34,
     },
 ]
 
