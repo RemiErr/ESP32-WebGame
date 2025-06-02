@@ -1,6 +1,6 @@
 @echo off
 chcp 65001
-set PORT=COM4
+set PORT=COM3
 
 echo 重置ESP32...
 mpremote connect %PORT% reset
@@ -28,6 +28,9 @@ mpremote connect %PORT% fs cp main.py :
 
 echo [env.py]
 mpremote connect %PORT% fs cp env.py :
+
+echo [config.py]
+mpremote connect %PORT% fs cp config.py :
 
 echo [game/]
 mpremote connect %PORT% fs cp -r game/ :
